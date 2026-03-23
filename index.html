@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>American Playground ( Rip-off )</title>
+    <link rel="stylesheet" href="../scripts/style.css">
     
     <style>
         :root {
@@ -13,8 +14,6 @@
             --background-color: #000000; 
             --card-bg: #0a0f1a; 
             --card-border: #1e293b;
-            --shadow: rgba(0, 0, 0, 0.8);
-            --popup-bg: #0a0f1a;
             --danger-color: #ef4444;
         }
 
@@ -27,7 +26,7 @@
             overflow-x: hidden;
         }
 
-        /* --- Header & Layout Styles --- */
+        /* --- Header Styles --- */
         header { 
             background-color: var(--background-color); 
             border-bottom: 2px solid var(--primary-color); 
@@ -50,9 +49,13 @@
             font-size: 1.5rem; 
             font-weight: 800; 
             color: var(--primary-color); 
-            cursor: pointer; /* Added so it feels clickable */
-            user-select: none; /* Prevents text highlighting when tapping fast */
+            cursor: pointer; 
+            user-select: none; 
         }
+
+        .navbar { margin-top: 10px; }
+        .navbar a { color: var(--text-color); margin-right: 15px; text-decoration: none; }
+        .navbar a:hover { color: var(--primary-color); }
         
         main { 
             max-width: 1200px; 
@@ -60,14 +63,8 @@
             padding: 2rem 1rem; 
             min-height: 70vh; 
         }
-        
-        #container { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
-            gap: 20px; 
-        }
 
-        /* --- Name Prompt & Lock Screen Overlays --- */
+        /* --- Custom UI Overlays --- */
         .fullscreen-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -90,40 +87,23 @@
         }
 
         .prompt-box input {
-            padding: 10px;
-            width: 80%;
-            margin: 15px 0;
-            background: var(--background-color);
-            border: 1px solid var(--primary-color);
-            color: white;
-            border-radius: 5px;
-            font-size: 16px;
+            padding: 10px; width: 80%; margin: 15px 0;
+            background: var(--background-color); border: 1px solid var(--primary-color);
+            color: white; border-radius: 5px; font-size: 16px;
         }
 
         .prompt-box button {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
+            background: var(--primary-color); color: white; border: none;
+            padding: 10px 20px; font-size: 16px; border-radius: 5px;
+            cursor: pointer; font-weight: bold;
         }
 
         /* --- Admin UI --- */
         #adminPanel {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 300px;
-            background-color: var(--card-bg);
-            border: 2px solid var(--danger-color);
-            border-radius: 10px;
-            padding: 15px;
-            z-index: 9000;
-            display: none;
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+            position: fixed; bottom: 20px; right: 20px; width: 300px;
+            background-color: var(--card-bg); border: 2px solid var(--danger-color);
+            border-radius: 10px; padding: 15px; z-index: 9000;
+            display: none; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
         }
 
         #adminPanel h3 { margin-top: 0; color: var(--danger-color); border-bottom: 1px solid var(--card-border); padding-bottom: 10px;}
@@ -133,9 +113,7 @@
         .admin-btn:hover { background: var(--primary-color); }
         .admin-btn.danger { background: var(--danger-color); }
         
-        #toastContainer {
-            position: fixed; top: 20px; right: 20px; z-index: 10000;
-        }
+        #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 10000; }
         .toast {
             background: var(--primary-color); color: white; padding: 15px 20px; border-radius: 5px;
             margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
@@ -170,7 +148,7 @@
             <label>Select User:</label>
             <select id="adminUserSelect">
                 <option value="all">Everyone</option>
-                </select>
+            </select>
         </div>
         <div class="admin-control" style="display: flex; justify-content: space-between;">
             <button class="admin-btn danger" onclick="adminAction('lock')">Lock</button>
@@ -190,16 +168,25 @@
 
     <header>
         <div class="header-content">
-            <div class="logo">American Playground ( Rip-off )</div>
+            <div>
+                <div class="logo">American Playground ( Rip-off )</div>
+                <div class="navbar">
+                    <a href="../index.html">Home</a>
+                    <a href="../games">Games</a>
+                </div>
+            </div>
             <div style="color: #888; font-size: 14px;">Welcome, <span id="displayUserName">Player</span></div>
         </div>
     </header>
 
     <main>
-        <div id="container">
-            </div>
+        <h4>Only Doom, The Final Earth 2, Tower Wizard, Undertale, Universal Paperclips, and Wordle work :(</h4>
+        
+        <div id="tags-container"></div>
+        <div id="game-container" class="games-container"></div>
     </main>
 
+    <script src="../scripts/main.js"></script>
     <script>
         // --- 1. User Identification & Name Logic ---
         let currentUser = {
@@ -234,28 +221,88 @@
             }
         }
 
-        // --- 2. WebSocket Logic ---
-        let ws;
-        
+        // --- 2. Initialization & Games Loading ---
         function initApp() {
             checkAdmin();
             connectWebSocket();
-            // Call your listZones() function here to load games if you have it
+            loadGames(); // THIS NOW LOADS YOUR GAMES!
         }
 
+        let allGames = [];
+        let selectedTags = new Set();
+
+        async function loadGames() {
+            try {
+                const response = await fetch("../scripts/json/games.json");
+                allGames = await response.json();
+                
+                let allTags = [...new Set(allGames.flatMap(game => game.tags))];
+                allTags.sort((a, b) => {
+                    if (a === "Featured") return -1;
+                    if (b === "Featured") return 1;
+                    if (a === "Beta") return 1;
+                    if (b === "Beta") return -1;
+                    return a.localeCompare(b);
+                });
+
+                const tagsContainer = document.getElementById("tags-container");
+                tagsContainer.innerHTML = ""; // clear just in case
+
+                allTags.forEach(tag => {
+                    const btn = document.createElement("button");
+                    btn.textContent = tag;
+                    btn.className = "tag-button";
+                    btn.onclick = () => toggleTag(tag, btn);
+                    tagsContainer.appendChild(btn);
+                });
+
+                renderGames();
+            } catch (error) {
+                console.error("Failed to load games:", error);
+            }
+        }
+
+        function toggleTag(tag, btn) {
+            if (selectedTags.has(tag)) {
+                selectedTags.delete(tag);
+                btn.classList.remove("active");
+            } else {
+                selectedTags.add(tag);
+                btn.classList.add("active");
+            }
+            renderGames();
+        }
+
+        function renderGames() {
+            const container = document.getElementById("game-container");
+            container.innerHTML = "";
+            const filteredGames = selectedTags.size === 0 ? allGames : allGames.filter(game => {
+                const tags = Array.isArray(game.tags) ? game.tags : [];
+                return [...selectedTags].some(t => tags.includes(t));
+            });
+            filteredGames.forEach(game => {
+                const gameBox = document.createElement("div");
+                gameBox.className = "game-box";
+                gameBox.innerHTML = `
+                    <img src="${game.image}" alt="${game.title}">
+                    <a href="${game.link}">${game.title}</a>
+                `;
+                container.appendChild(gameBox);
+            });
+        }
+
+        // --- 3. WebSocket Logic ---
+        let ws;
         function connectWebSocket() {
-            // REPLACE THIS URL with your actual backend server URL once you build it.
-            const wsUrl = 'wss://amplr.onrender.com'; 
+            // REMEMBER TO UPDATE THIS TO YOUR RENDER URL LATER
+            const wsUrl = 'wss://echo.websocket.org'; 
             
             try {
                 ws = new WebSocket(wsUrl);
 
                 ws.onopen = () => {
                     console.log('Connected to Server');
-                    ws.send(JSON.stringify({
-                        type: 'join',
-                        user: currentUser
-                    }));
+                    ws.send(JSON.stringify({ type: 'join', user: currentUser }));
                 };
 
                 ws.onmessage = (event) => {
@@ -268,30 +315,19 @@
                     setTimeout(connectWebSocket, 5000);
                 };
             } catch (e) {
-                console.warn("WebSocket failed to connect. Ensure you have a backend server running.");
+                console.warn("WebSocket failed to connect.");
             }
         }
 
-        // --- 3. Client Reaction Logic ---
         function handleServerCommand(data) {
             if (data.targetId && data.targetId !== 'all' && data.targetId !== currentUser.id) return;
 
             switch (data.action) {
-                case 'lock':
-                    document.getElementById('lockScreenOverlay').style.display = 'flex';
-                    break;
-                case 'unlock':
-                    document.getElementById('lockScreenOverlay').style.display = 'none';
-                    break;
-                case 'message':
-                    showToast(data.payload);
-                    break;
-                case 'redirect':
-                    window.location.href = data.payload;
-                    break;
-                case 'userListUpdate':
-                    if (currentUser.isAdmin) updateUserDropdown(data.payload);
-                    break;
+                case 'lock': document.getElementById('lockScreenOverlay').style.display = 'flex'; break;
+                case 'unlock': document.getElementById('lockScreenOverlay').style.display = 'none'; break;
+                case 'message': showToast(data.payload); break;
+                case 'redirect': window.location.href = data.payload; break;
+                case 'userListUpdate': if (currentUser.isAdmin) updateUserDropdown(data.payload); break;
             }
         }
 
@@ -306,9 +342,7 @@
 
         // --- 4. Admin UI Logic ---
         function checkAdmin() {
-            if (currentUser.isAdmin) {
-                document.getElementById('adminPanel').style.display = 'block';
-            }
+            if (currentUser.isAdmin) document.getElementById('adminPanel').style.display = 'block';
         }
 
         function updateUserDropdown(users) {
@@ -336,14 +370,7 @@
             if (actionType === 'message') payload = document.getElementById('adminMsgInput').value;
             if (actionType === 'redirect') payload = document.getElementById('adminUrlInput').value;
 
-            const command = {
-                type: 'adminCommand',
-                action: actionType,
-                targetId: targetId,
-                payload: payload
-            };
-
-            ws.send(JSON.stringify(command));
+            ws.send(JSON.stringify({ type: 'adminCommand', action: actionType, targetId: targetId, payload: payload }));
             
             document.getElementById('adminMsgInput').value = '';
             document.getElementById('adminUrlInput').value = '';
@@ -352,13 +379,10 @@
         // --- 5. Secret Admin Backdoor ---
         let logoClickCount = 0;
         let clickTimer;
-
         function setupAdminBackdoor() {
             const logo = document.querySelector('.logo');
-            
             logo.addEventListener('click', () => {
                 logoClickCount++;
-                
                 clearTimeout(clickTimer);
                 clickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
 
