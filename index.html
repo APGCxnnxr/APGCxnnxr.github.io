@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>American Playground ( Rip-off )</title>
-    <link rel="stylesheet" href="../scripts/style.css">
+    
+    <link rel="stylesheet" href="scripts/style.css">
     
     <style>
         :root {
@@ -21,91 +22,76 @@
             background-color: var(--background-color);
             color: var(--text-color);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
+            margin: 0; padding: 0; overflow-x: hidden;
         }
 
         /* --- Header Styles --- */
         header { 
-            background-color: var(--background-color); 
-            border-bottom: 2px solid var(--primary-color); 
-            padding: 1rem; 
-            text-align: center; 
-            position: sticky; 
-            top: 0; 
-            z-index: 100; 
+            background-color: var(--background-color); border-bottom: 2px solid var(--primary-color); 
+            padding: 1rem; text-align: center; position: sticky; top: 0; z-index: 100; 
         }
-        
-        .header-content { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            max-width: 1200px; 
-            margin: 0 auto; 
-        }
-        
-        .logo { 
-            font-size: 1.5rem; 
-            font-weight: 800; 
-            color: var(--primary-color); 
-            cursor: pointer; 
-            user-select: none; 
-        }
-
+        .header-content { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary-color); cursor: pointer; user-select: none; }
         .navbar { margin-top: 10px; }
-        .navbar a { color: var(--text-color); margin-right: 15px; text-decoration: none; }
+        .navbar a { color: var(--text-color); margin-right: 15px; text-decoration: none; cursor: pointer; }
         .navbar a:hover { color: var(--primary-color); }
         
-        main { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            padding: 2rem 1rem; 
-            min-height: 70vh; 
+        main { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; min-height: 70vh; }
+
+        /* --- Game Grid Styles (in case style.css misses them) --- */
+        .game-box {
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px;
+            padding: 10px; text-align: center; cursor: pointer; transition: transform 0.2s;
         }
+        .game-box:hover { transform: scale(1.05); border-color: var(--primary-color); }
+        .game-box img { max-width: 100%; border-radius: 4px; margin-bottom: 10px; }
+        .game-box span { display: block; font-weight: bold; color: var(--text-color); }
 
         /* --- Custom UI Overlays --- */
         .fullscreen-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            flex-direction: column;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.95); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; flex-direction: column;
         }
 
         .prompt-box {
-            background-color: var(--card-bg);
-            border: 2px solid var(--primary-color);
-            padding: 2rem;
-            border-radius: 10px;
-            text-align: center;
+            background-color: var(--card-bg); border: 2px solid var(--primary-color);
+            padding: 2rem; border-radius: 10px; text-align: center;
             box-shadow: 0 10px 30px rgba(15, 76, 129, 0.5);
         }
-
         .prompt-box input {
-            padding: 10px; width: 80%; margin: 15px 0;
-            background: var(--background-color); border: 1px solid var(--primary-color);
-            color: white; border-radius: 5px; font-size: 16px;
+            padding: 10px; width: 80%; margin: 15px 0; background: var(--background-color); 
+            border: 1px solid var(--primary-color); color: white; border-radius: 5px; font-size: 16px;
+        }
+        .prompt-box button {
+            background: var(--primary-color); color: white; border: none; padding: 10px 20px; 
+            font-size: 16px; border-radius: 5px; cursor: pointer; font-weight: bold;
         }
 
-        .prompt-box button {
-            background: var(--primary-color); color: white; border: none;
-            padding: 10px 20px; font-size: 16px; border-radius: 5px;
-            cursor: pointer; font-weight: bold;
+        /* --- Game Player Overlay (Iframe) --- */
+        #gamePlayerOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--background-color); z-index: 5000; /* Below lock screen, above site */
+            display: none; flex-direction: column;
         }
+        .player-header {
+            background-color: var(--card-bg); border-bottom: 2px solid var(--primary-color);
+            padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .player-header button {
+            background: var(--primary-color); color: white; border: none; padding: 8px 15px; 
+            border-radius: 5px; cursor: pointer; font-weight: bold;
+        }
+        .player-header button:hover { background: var(--primary-hover); }
+        #gameIframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #000; }
 
         /* --- Admin UI --- */
         #adminPanel {
-            position: fixed; bottom: 20px; right: 20px; width: 300px;
-            background-color: var(--card-bg); border: 2px solid var(--danger-color);
-            border-radius: 10px; padding: 15px; z-index: 9000;
-            display: none; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+            position: fixed; bottom: 20px; right: 20px; width: 300px; background-color: var(--card-bg); 
+            border: 2px solid var(--danger-color); border-radius: 10px; padding: 15px; 
+            z-index: 9000; display: none; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
         }
-
         #adminPanel h3 { margin-top: 0; color: var(--danger-color); border-bottom: 1px solid var(--card-border); padding-bottom: 10px;}
         .admin-control { margin-bottom: 15px; }
         .admin-control select, .admin-control input { width: 100%; padding: 8px; margin-top: 5px; background: #000; color: white; border: 1px solid var(--card-border); box-sizing: border-box; }
@@ -116,8 +102,7 @@
         #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 10000; }
         .toast {
             background: var(--primary-color); color: white; padding: 15px 20px; border-radius: 5px;
-            margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            animation: slideIn 0.3s ease-out forwards;
+            margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); animation: slideIn 0.3s ease-out forwards;
         }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
@@ -140,6 +125,14 @@
             <h1 style="color: white; margin-top: 20px;">Site Locked</h1>
             <p style="color: #888;">An administrator has temporarily locked your access.</p>
         </div>
+    </div>
+
+    <div id="gamePlayerOverlay">
+        <div class="player-header">
+            <button onclick="closeGame()">⬅ Back to Games</button>
+            <h3 id="playingTitle" style="margin: 0; color: white;">Playing...</h3>
+            <div style="width: 100px;"></div> </div>
+        <iframe id="gameIframe" src=""></iframe>
     </div>
 
     <div id="adminPanel">
@@ -171,8 +164,7 @@
             <div>
                 <div class="logo">American Playground ( Rip-off )</div>
                 <div class="navbar">
-                    <a href="../index.html">Home</a>
-                    <a href="../games">Games</a>
+                    <a onclick="closeGame()">Home</a>
                 </div>
             </div>
             <div style="color: #888; font-size: 14px;">Welcome, <span id="displayUserName">Player</span></div>
@@ -180,15 +172,15 @@
     </header>
 
     <main>
-        <h4>Only Doom, The Final Earth 2, Tower Wizard, Undertale, Universal Paperclips, and Wordle work :(</h4>
+        <h4>Testing the website I see......</h4>
         
-        <div id="tags-container"></div>
-        <div id="game-container" class="games-container"></div>
+        <div id="tags-container" style="margin-bottom: 20px;"></div>
+        <div id="game-container" class="games-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;"></div>
     </main>
 
-    <script src="../scripts/main.js"></script>
+    <script src="scripts/main.js"></script>
     <script>
-        // --- 1. User Identification & Name Logic ---
+        // --- 1. User Logic ---
         let currentUser = {
             id: localStorage.getItem('userId') || generateId(),
             name: localStorage.getItem('userName'),
@@ -221,32 +213,32 @@
             }
         }
 
-        // --- 2. Initialization & Games Loading ---
         function initApp() {
             checkAdmin();
             connectWebSocket();
-            loadGames(); // THIS NOW LOADS YOUR GAMES!
+            loadGames(); 
         }
 
+        // --- 2. Game Loading & Iframe Logic ---
         let allGames = [];
         let selectedTags = new Set();
 
         async function loadGames() {
             try {
-                const response = await fetch("../scripts/json/games.json");
+                const response = await fetch("scripts/json/games.json");
+                if (!response.ok) throw new Error("Could not find games.json");
+                
                 allGames = await response.json();
                 
                 let allTags = [...new Set(allGames.flatMap(game => game.tags))];
                 allTags.sort((a, b) => {
                     if (a === "Featured") return -1;
                     if (b === "Featured") return 1;
-                    if (a === "Beta") return 1;
-                    if (b === "Beta") return -1;
                     return a.localeCompare(b);
                 });
 
                 const tagsContainer = document.getElementById("tags-container");
-                tagsContainer.innerHTML = ""; // clear just in case
+                tagsContainer.innerHTML = ""; 
 
                 allTags.forEach(tag => {
                     const btn = document.createElement("button");
@@ -259,6 +251,7 @@
                 renderGames();
             } catch (error) {
                 console.error("Failed to load games:", error);
+                document.getElementById('game-container').innerHTML = "<p style='color:red;'>Failed to load games data.</p>";
             }
         }
 
@@ -283,35 +276,46 @@
             filteredGames.forEach(game => {
                 const gameBox = document.createElement("div");
                 gameBox.className = "game-box";
+                // Now, clicking the box opens the game in the iframe!
+                gameBox.onclick = () => openGame(game.link, game.title);
                 gameBox.innerHTML = `
                     <img src="${game.image}" alt="${game.title}">
-                    <a href="${game.link}">${game.title}</a>
+                    <span>${game.title}</span>
                 `;
                 container.appendChild(gameBox);
             });
         }
 
+        // NEW: Open game in overlay
+        function openGame(link, title) {
+            document.getElementById('playingTitle').textContent = "Playing: " + title;
+            document.getElementById('gameIframe').src = link;
+            document.getElementById('gamePlayerOverlay').style.display = 'flex';
+        }
+
+        // NEW: Close game overlay
+        function closeGame() {
+            document.getElementById('gameIframe').src = ""; // Unload the game
+            document.getElementById('gamePlayerOverlay').style.display = 'none';
+        }
+
+
         // --- 3. WebSocket Logic ---
         let ws;
         function connectWebSocket() {
-            // REMEMBER TO UPDATE THIS TO YOUR RENDER URL LATER
+            // RENDER SERVER URL GOES HERE
             const wsUrl = 'wss://echo.websocket.org'; 
-            
             try {
                 ws = new WebSocket(wsUrl);
-
                 ws.onopen = () => {
                     console.log('Connected to Server');
                     ws.send(JSON.stringify({ type: 'join', user: currentUser }));
                 };
-
                 ws.onmessage = (event) => {
                     const data = JSON.parse(event.data);
                     handleServerCommand(data);
                 };
-
                 ws.onclose = () => {
-                    console.log('Disconnected. Retrying in 5s...');
                     setTimeout(connectWebSocket, 5000);
                 };
             } catch (e) {
@@ -359,11 +363,7 @@
         }
 
         function adminAction(actionType) {
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                alert("Not connected to server!");
-                return;
-            }
-
+            if (!ws || ws.readyState !== WebSocket.OPEN) return alert("Not connected to server!");
             const targetId = document.getElementById('adminUserSelect').value;
             let payload = '';
 
