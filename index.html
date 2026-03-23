@@ -25,7 +25,6 @@
             margin: 0; padding: 0; overflow-x: hidden;
         }
 
-        /* --- Header Styles --- */
         header { 
             background-color: var(--background-color); border-bottom: 2px solid var(--primary-color); 
             padding: 1rem; text-align: center; position: sticky; top: 0; z-index: 100; 
@@ -38,16 +37,15 @@
         
         main { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; min-height: 70vh; }
 
-        /* --- Game Grid Styles (in case style.css misses them) --- */
+        /* Modified Game Box for text-only display */
         .game-box {
             background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px;
-            padding: 10px; text-align: center; cursor: pointer; transition: transform 0.2s;
+            padding: 40px 10px; text-align: center; cursor: pointer; transition: transform 0.2s;
+            display: flex; align-items: center; justify-content: center;
         }
-        .game-box:hover { transform: scale(1.05); border-color: var(--primary-color); }
-        .game-box img { max-width: 100%; border-radius: 4px; margin-bottom: 10px; }
-        .game-box span { display: block; font-weight: bold; color: var(--text-color); }
+        .game-box:hover { transform: scale(1.05); border-color: var(--primary-color); background: #111a2e; }
+        .game-box span { font-size: 1.2rem; font-weight: bold; color: var(--text-color); }
 
-        /* --- Custom UI Overlays --- */
         .fullscreen-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.95); backdrop-filter: blur(10px);
@@ -69,10 +67,9 @@
             font-size: 16px; border-radius: 5px; cursor: pointer; font-weight: bold;
         }
 
-        /* --- Game Player Overlay (Iframe) --- */
         #gamePlayerOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--background-color); z-index: 5000; /* Below lock screen, above site */
+            background-color: var(--background-color); z-index: 5000;
             display: none; flex-direction: column;
         }
         .player-header {
@@ -86,7 +83,6 @@
         .player-header button:hover { background: var(--primary-hover); }
         #gameIframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #000; }
 
-        /* --- Admin UI --- */
         #adminPanel {
             position: fixed; bottom: 20px; right: 20px; width: 300px; background-color: var(--card-bg); 
             border: 2px solid var(--danger-color); border-radius: 10px; padding: 15px; 
@@ -109,7 +105,7 @@
 </head>
 <body>
 
-    <div id="namePromptOverlay" class="fullscreen-overlay" style="display: none;">
+    <div id="namePromptOverlay" class="fullscreen-overlay">
         <div class="prompt-box">
             <h2>Welcome to American Playground</h2>
             <p>What should we call you?</p>
@@ -131,7 +127,8 @@
         <div class="player-header">
             <button onclick="closeGame()">⬅ Back to Games</button>
             <h3 id="playingTitle" style="margin: 0; color: white;">Playing...</h3>
-            <div style="width: 100px;"></div> </div>
+            <div style="width: 100px;"></div>
+        </div>
         <iframe id="gameIframe" src=""></iframe>
     </div>
 
@@ -172,7 +169,7 @@
     </header>
 
     <main>
-        <h4>Testing the website I see......</h4>
+        <h4>Only Doom, The Final Earth 2, Tower Wizard, Undertale, Universal Paperclips, and Wordle work :(</h4>
         
         <div id="tags-container" style="margin-bottom: 20px;"></div>
         <div id="game-container" class="games-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;"></div>
@@ -180,7 +177,7 @@
 
     <script src="scripts/main.js"></script>
     <script>
-        // --- 1. User Logic ---
+        // --- User Logic ---
         let currentUser = {
             id: localStorage.getItem('userId') || generateId(),
             name: localStorage.getItem('userName'),
@@ -194,9 +191,8 @@
         }
 
         function checkName() {
-            if (!currentUser.name) {
-                document.getElementById('namePromptOverlay').style.display = 'flex';
-            } else {
+            if (currentUser.name) {
+                document.getElementById('namePromptOverlay').style.display = 'none';
                 document.getElementById('displayUserName').textContent = currentUser.name;
                 initApp(); 
             }
@@ -216,94 +212,76 @@
         function initApp() {
             checkAdmin();
             connectWebSocket();
-            loadGames(); 
+            loadGamesFromGitHub(); 
         }
 
-        // --- 2. Game Loading & Iframe Logic ---
+        // --- GitHub API Game Loader ---
         let allGames = [];
-        let selectedTags = new Set();
 
-        async function loadGames() {
+        async function loadGamesFromGitHub() {
             try {
-                const response = await fetch("scripts/json/games.json");
-                if (!response.ok) throw new Error("Could not find games.json");
-                
-                allGames = await response.json();
-                
-                let allTags = [...new Set(allGames.flatMap(game => game.tags))];
-                allTags.sort((a, b) => {
-                    if (a === "Featured") return -1;
-                    if (b === "Featured") return 1;
-                    return a.localeCompare(b);
-                });
+                const githubUsername = "APGCxnnxr"; 
+                const repositoryName = "APGCxnnxr.github.io";
+                const folderName = "games"; 
 
-                const tagsContainer = document.getElementById("tags-container");
-                tagsContainer.innerHTML = ""; 
+                const apiUrl = `https://api.github.com/repos/${githubUsername}/${repositoryName}/contents/${folderName}`;
+                
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("Could not fetch folder contents from GitHub.");
+                
+                const files = await response.json();
+                
+                // Only grab .html files
+                const htmlFiles = files.filter(file => file.name.endsWith('.html'));
 
-                allTags.forEach(tag => {
-                    const btn = document.createElement("button");
-                    btn.textContent = tag;
-                    btn.className = "tag-button";
-                    btn.onclick = () => toggleTag(tag, btn);
-                    tagsContainer.appendChild(btn);
+                allGames = htmlFiles.map(file => {
+                    // Remove .html extension
+                    let rawName = file.name.replace('.html', '');
+                    // Replace dashes/underscores with spaces and capitalize words
+                    let cleanTitle = rawName.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                    return {
+                        title: cleanTitle,
+                        link: file.path // This will be "games/filename.html"
+                    };
                 });
 
                 renderGames();
+
             } catch (error) {
-                console.error("Failed to load games:", error);
-                document.getElementById('game-container').innerHTML = "<p style='color:red;'>Failed to load games data.</p>";
+                console.error("Failed to load games from GitHub:", error);
+                document.getElementById('game-container').innerHTML = "<p style='color:red;'>Failed to read games folder from GitHub. Make sure you have a folder named 'games' with your HTML files inside!</p>";
             }
         }
 
-        function toggleTag(tag, btn) {
-            if (selectedTags.has(tag)) {
-                selectedTags.delete(tag);
-                btn.classList.remove("active");
-            } else {
-                selectedTags.add(tag);
-                btn.classList.add("active");
-            }
-            renderGames();
-        }
-
+        // Modified render function to display text-only boxes
         function renderGames() {
             const container = document.getElementById("game-container");
             container.innerHTML = "";
-            const filteredGames = selectedTags.size === 0 ? allGames : allGames.filter(game => {
-                const tags = Array.isArray(game.tags) ? game.tags : [];
-                return [...selectedTags].some(t => tags.includes(t));
-            });
-            filteredGames.forEach(game => {
+            
+            allGames.forEach(game => {
                 const gameBox = document.createElement("div");
                 gameBox.className = "game-box";
-                // Now, clicking the box opens the game in the iframe!
                 gameBox.onclick = () => openGame(game.link, game.title);
-                gameBox.innerHTML = `
-                    <img src="${game.image}" alt="${game.title}">
-                    <span>${game.title}</span>
-                `;
+                gameBox.innerHTML = `<span>${game.title}</span>`;
                 container.appendChild(gameBox);
             });
         }
 
-        // NEW: Open game in overlay
         function openGame(link, title) {
             document.getElementById('playingTitle').textContent = "Playing: " + title;
             document.getElementById('gameIframe').src = link;
             document.getElementById('gamePlayerOverlay').style.display = 'flex';
         }
 
-        // NEW: Close game overlay
         function closeGame() {
-            document.getElementById('gameIframe').src = ""; // Unload the game
+            document.getElementById('gameIframe').src = ""; 
             document.getElementById('gamePlayerOverlay').style.display = 'none';
         }
 
-
-        // --- 3. WebSocket Logic ---
+        // --- WebSocket Logic ---
         let ws;
         function connectWebSocket() {
-            // RENDER SERVER URL GOES HERE
             const wsUrl = 'wss://amplr.gorender.com'; 
             try {
                 ws = new WebSocket(wsUrl);
@@ -344,7 +322,7 @@
             setTimeout(() => toast.remove(), 5000);
         }
 
-        // --- 4. Admin UI Logic ---
+        // --- Admin UI Logic ---
         function checkAdmin() {
             if (currentUser.isAdmin) document.getElementById('adminPanel').style.display = 'block';
         }
@@ -376,7 +354,7 @@
             document.getElementById('adminUrlInput').value = '';
         }
 
-        // --- 5. Secret Admin Backdoor ---
+        // --- Secret Admin Backdoor ---
         let logoClickCount = 0;
         let clickTimer;
         function setupAdminBackdoor() {
@@ -396,7 +374,6 @@
             });
         }
 
-        // Boot sequence
         document.addEventListener('DOMContentLoaded', () => {
             checkName();
             setupAdminBackdoor();
