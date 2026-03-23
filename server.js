@@ -1,45 +1,44 @@
 const WebSocket = require('ws');
 
-// Render provides a PORT environment variable. We use 10000 as a fallback.
+// Render gives us a dynamic PORT, or we default to 10000
 const port = process.env.PORT || 10000; 
 const wss = new WebSocket.Server({ port: port });
 
-let clients = new Map(); // Stores the connection and user data
+let clients = new Map(); // Stores connections and user info
 
 wss.on('connection', (ws) => {
-    console.log('New player connected');
+    console.log('New connection established!');
 
     ws.on('message', (messageAsString) => {
         try {
             const data = JSON.parse(messageAsString);
 
-            // 1. When a user joins, save their info
+            // 1. Save user info when they join
             if (data.type === 'join') {
                 clients.set(ws, data.user);
                 broadcastUserList();
             } 
             
-            // 2. When an admin sends a command, route it to the target
+            // 2. Route admin commands to the correct player(s)
             else if (data.type === 'adminCommand') {
                 const sender = clients.get(ws);
-                // Candor note: We are trusting the frontend 'isAdmin' flag here. 
                 if (sender && sender.isAdmin) {
                     executeAdminCommand(data);
                 }
             }
         } catch (err) {
-            console.error("Invalid message format", err);
+            console.error("Invalid message received", err);
         }
     });
 
-    // 3. When a user leaves, remove them and update admins
+    // 3. Clean up when someone closes the tab
     ws.on('close', () => {
         clients.delete(ws);
         broadcastUserList();
     });
 });
 
-// Send the active player list ONLY to admins
+// Sends the player list to the admin panel
 function broadcastUserList() {
     const userList = Array.from(clients.values());
     const msg = JSON.stringify({ action: 'userListUpdate', payload: userList, targetId: 'all' });
@@ -54,7 +53,7 @@ function broadcastUserList() {
     });
 }
 
-// Forward the lock/redirect/message command to the right player
+// Sends the lock/unlock/redirect command
 function executeAdminCommand(commandData) {
     const msg = JSON.stringify(commandData);
     wss.clients.forEach(client => {
@@ -67,4 +66,4 @@ function executeAdminCommand(commandData) {
     });
 }
 
-console.log(`WebSocket server running on port ${port}`);
+console.log(`WebSocket server is running on port ${port}`);
