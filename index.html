@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>American Playground </title>
+    <title>American Playground</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="scripts/style.css">
     
     <style>
@@ -90,6 +90,31 @@
             margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); animation: slideIn 0.3s ease-out forwards;
         }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        /* --- HIDDEN ADMIN PANEL STYLES --- */
+        #inGameAdminPanel {
+            display: none; /* Completely hidden by default */
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-bg); 
+            border: 2px solid var(--danger-color); 
+            padding: 25px;
+            border-radius: 10px; 
+            width: 350px; 
+            z-index: 10001; /* Must be higher than other overlays */
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+            color: white; 
+        }
+        #inGameAdminPanel h2 { color: var(--danger-color); text-align: center; margin-top: 0; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
+        #inGameAdminPanel input, #inGameAdminPanel button {
+            width: 100%; margin-top: 10px; padding: 10px; box-sizing: border-box;
+            border-radius: 4px; border: 1px solid var(--card-border); background: #000; color: white;
+        }
+        #inGameAdminPanel button { background: var(--danger-color); cursor: pointer; font-weight: bold; border: none; }
+        #inGameAdminPanel button:hover { background: #dc2626; }
+        #closeAdmin { background: #333; margin-top: 15px; }
+        #closeAdmin:hover { background: #555; }
     </style>
 </head>
 <body>
@@ -110,6 +135,28 @@
             <h1 style="color: white; margin-top: 20px;">Site Locked</h1>
             <p style="color: #888;">An administrator has temporarily locked your access.</p>
         </div>
+    </div>
+
+    <div id="inGameAdminPanel">
+        <h2>Command Center ⚡</h2>
+        
+        <input type="password" id="adminSecretPass" placeholder="Enter Admin Password">
+        
+        <label style="font-size: 12px; color: #888; margin-top: 10px; display: block;">Target User ID (Leave blank for all):</label>
+        <input type="text" id="targetUserId" placeholder="e.g. 0g39wv7wi">
+
+        <input type="text" id="adminMsgText" placeholder="Broadcast Message...">
+        <button onclick="sendAdminCommand('message')">Broadcast Message</button>
+
+        <input type="text" id="adminUrlText" placeholder="https://...">
+        <button onclick="sendAdminCommand('redirect')">Force Redirect</button>
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button onclick="sendAdminCommand('lock')" style="background: #eab308; color: black;">Lock Site</button>
+            <button onclick="sendAdminCommand('unlock')" style="background: var(--primary-color);">Unlock Site</button>
+        </div>
+        
+        <button id="closeAdmin" onclick="toggleAdminPanel()">Close Panel</button>
     </div>
 
     <div id="gamePlayerOverlay">
@@ -144,6 +191,7 @@
 
     <script src="scripts/main.js"></script>
     <script>
+        // --- EXISTING GAME LOGIC ---
         let currentUser = {
             id: localStorage.getItem('userId') || generateId(),
             name: localStorage.getItem('userName')
@@ -281,6 +329,57 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkName();
         });
+
+        // --- NEW ADMIN LOGIC ---
+        
+        // Listen for Ctrl + Shift + A to toggle the menu
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'a') {
+                toggleAdminPanel();
+            }
+        });
+
+        function toggleAdminPanel() {
+            const panel = document.getElementById('inGameAdminPanel');
+            if (panel.style.display === 'none' || panel.style.display === '') {
+                panel.style.display = 'block';
+                document.getElementById('adminSecretPass').focus();
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        function sendAdminCommand(action) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                return alert("Cannot send command: Game is not connected to the server!");
+            }
+
+            const password = document.getElementById('adminSecretPass').value;
+            if (!password) {
+                return alert("Access Denied: You must enter the admin password.");
+            }
+
+            let payload = "";
+            if (action === 'message') payload = document.getElementById('adminMsgText').value;
+            if (action === 'redirect') payload = document.getElementById('adminUrlText').value;
+
+            const targetId = document.getElementById('targetUserId').value || "all";
+
+            const commandData = {
+                type: 'adminCommand', // Must match your server's expected type
+                action: action,
+                targetId: targetId,
+                payload: payload,
+                password: password 
+            };
+
+            ws.send(JSON.stringify(commandData));
+            console.log("Admin command sent:", commandData);
+            
+            // Clear inputs
+            document.getElementById('adminMsgText').value = '';
+            document.getElementById('adminUrlText').value = '';
+        }
     </script>
 </body>
 </html>
