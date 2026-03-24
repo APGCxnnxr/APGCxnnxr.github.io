@@ -270,4 +270,66 @@
         function updateAdminPlayerList(users) {
             const list = document.getElementById('playerListDisplay');
             list.innerHTML = '';
-            for (let id in users
+            for (let id in users) {
+                const li = document.createElement('li');
+                li.style.cssText = "padding: 5px; cursor: pointer; border-bottom: 1px solid #111; font-size: 12px;";
+                li.textContent = `${users[id]} [${id}]`;
+                li.onclick = () => document.getElementById('targetId').value = id;
+                list.appendChild(li);
+            }
+        }
+
+        function joinSite() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (name) {
+                user.name = name;
+                localStorage.setItem('ap_name', name);
+                document.getElementById('joinOverlay').style.display = 'none';
+                document.getElementById('userDisplay').textContent = name;
+                connectWS();
+                loadGames();
+            }
+        }
+
+        function closeGame() {
+            document.getElementById('gameIframe').src = '';
+            document.getElementById('gameViewer').style.display = 'none';
+        }
+
+        function searchGames() {
+            const q = document.getElementById('searchBar').value.toLowerCase();
+            document.querySelectorAll('.game-card').forEach(card => {
+                card.style.display = card.getAttribute('data-name').includes(q) ? 'flex' : 'none';
+            });
+        }
+
+        function toggleAdmin() {
+            const p = document.getElementById('inGameAdminPanel');
+            p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function doAdmin(action) {
+            ws.send(JSON.stringify({
+                type: 'adminCommand',
+                password: document.getElementById('adminPass').value,
+                action: action,
+                targetId: document.getElementById('targetId').value || 'all',
+                payload: document.getElementById('adminCommandValue').value
+            }));
+        }
+
+        // Shortcut: Ctrl + Shift + A to open Admin Panel
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') toggleAdmin();
+        });
+
+        // Auto-join if already named
+        if (user.name) {
+            document.getElementById('joinOverlay').style.display = 'none';
+            document.getElementById('userDisplay').textContent = user.name;
+            connectWS();
+            loadGames();
+        }
+    </script>
+</body>
+</html>
