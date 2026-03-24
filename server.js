@@ -2,68 +2,79 @@ const WebSocket = require('ws');
 
 // Render gives us a dynamic PORT, or we default to 10000
 const port = process.env.PORT || 10000; 
-const wss = new WebSocket.Server({ port: port });
+const wss = new WebSocket.Server({ port: port }, () => {
+    console.log(`WebSocket server running on port ${port}`);
+});
 
-let clients = new Map(); // Stores connections and user info
+// 🛑 YOUR SECRET ADMIN PASSWORD 🛑
+// Change this to whatever you want. Don't tell your friends!
+const ADMIN_PASSWORD = "AdminConBad";
+
+// This Map will keep track of every connected player's info
+const clients = new Map();
 
 wss.on('connection', (ws) => {
-    console.log('New connection established!');
+    console.log('New connection detected.');
 
     ws.on('message', (messageAsString) => {
         try {
             const data = JSON.parse(messageAsString);
 
-            // 1. Save user info when they join
+            // 1. Handle regular players joining the site
             if (data.type === 'join') {
                 clients.set(ws, data.user);
-                broadcastUserList();
-            } 
-            
-            // 2. Route admin commands to the correct player(s)
-            else if (data.type === 'adminCommand') {
-                const sender = clients.get(ws);
-                if (sender && sender.isAdmin) {
-                    executeAdminCommand(data);
-                }
+                console.log(`${data.user.name} (${data.user.id}) joined the playground.`);
+                return;
             }
-        } catch (err) {
-            console.error("Invalid message received", err);
+
+            // 2. Handle your admin.html asking for the list of players
+            if (data.type === 'getUsers') {
+                // Security Check: Does the password match?
+                if (data.password !== ADMIN_PASSWORD) {
+                    console.warn("Unauthorized attempt to get user list.");
+                    return; 
+                }
+                
+                // If the password matches, send the list of players back to the admin panel
+                const userList = Array.from(clients.values());
+                ws.send(JSON.stringify({
+                    action: 'userListUpdate',
+                    payload: userList
+                }));
+                return;
+            }
+
+            // 3. Handle actual Admin Commands (Lock, Message, Redirect)
+            if (data.type === 'adminCommand') {
+                // Security Check: Does the password match?
+                if (data.password !== ADMIN_PASSWORD) {
+                    console.warn(`Unauthorized command attempt: ${data.action}`);
+                    return; // Ignore the command entirely
+                }
+
+                console.log(`Admin executed: ${data.action} on target: ${data.targetId}`);
+
+                // Broadcast the command to everyone currently connected
+                wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify({
+                            action: data.action,
+                            targetId: data.targetId,
+                            payload: data.payload
+                        }));
+                    }
+                });
+            }
+
+        } catch (error) {
+            console.error("Error processing message:", error);
         }
     });
 
-    // 3. Clean up when someone closes the tab
+    // When a player closes the tab, remove them from the list
     ws.on('close', () => {
+        const user = clients.get(ws);
+        if (user) console.log(`${user.name} left the playground.`);
         clients.delete(ws);
-        broadcastUserList();
     });
 });
-
-// Sends the player list to the admin panel
-function broadcastUserList() {
-    const userList = Array.from(clients.values());
-    const msg = JSON.stringify({ action: 'userListUpdate', payload: userList, targetId: 'all' });
-    
-    wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            const user = clients.get(client);
-            if (user && user.isAdmin) {
-                client.send(msg);
-            }
-        }
-    });
-}
-
-// Sends the lock/unlock/redirect command
-function executeAdminCommand(commandData) {
-    const msg = JSON.stringify(commandData);
-    wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            const user = clients.get(client);
-            if (commandData.targetId === 'all' || (user && user.id === commandData.targetId)) {
-                client.send(msg);
-            }
-        }
-    });
-}
-
-console.log(`WebSocket server is running on port ${port}`);
