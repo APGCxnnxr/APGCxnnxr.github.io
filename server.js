@@ -80,3 +80,19 @@ wss.on('connection', (ws) => {
         }
     });
 });
+wss.on('connection', function connection(ws, req) {
+  // 1. Log EVERY connection attempt immediately
+  console.log(`[WSS] New connection attempt from: ${req.socket.remoteAddress}`);
+
+  ws.on('message', function message(data) {
+    // 2. Log EVERY raw message before trying to parse it
+    console.log('[WSS] Raw message received:', data.toString());
+    
+    try {
+      const parsed = JSON.parse(data);
+      // Handle your admin commands here
+    } catch (err) {
+      console.error('[WSS] Failed to parse message:', err);
+    }
+  });
+});
