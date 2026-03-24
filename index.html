@@ -4,381 +4,191 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>American Playground</title>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="scripts/style.css">
     
     <style>
         :root {
             --primary-color: #0f4c81; 
-            --primary-hover: #1e3a8a; 
             --text-color: #e2e8f0;
             --background-color: #000000; 
             --card-bg: #0a0f1a; 
-            --card-border: #1e293b;
             --danger-color: #ef4444;
         }
 
-        body {
-            background-color: var(--background-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0; padding: 0; overflow-x: hidden;
-        }
-
-        header { 
-            background-color: var(--background-color); border-bottom: 2px solid var(--primary-color); 
-            padding: 1rem; text-align: center; position: sticky; top: 0; z-index: 100; 
-        }
+        body { background-color: var(--background-color); color: var(--text-color); font-family: sans-serif; margin: 0; overflow-x: hidden; }
+        header { border-bottom: 2px solid var(--primary-color); padding: 1rem; text-align: center; }
         .header-content { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; }
-        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary-color); cursor: pointer; user-select: none; }
-        .navbar { margin-top: 10px; }
-        .navbar a { color: var(--text-color); margin-right: 15px; text-decoration: none; cursor: pointer; }
-        .navbar a:hover { color: var(--primary-color); }
-        
-        main { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; min-height: 70vh; }
+        main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
 
-        .game-box {
-            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px;
-            padding: 40px 10px; text-align: center; cursor: pointer; transition: transform 0.2s;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .game-box:hover { transform: scale(1.05); border-color: var(--primary-color); background: #111a2e; }
-        .game-box span { font-size: 1.2rem; font-weight: bold; color: var(--text-color); }
-
+        /* Overlays */
         .fullscreen-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.95); backdrop-filter: blur(10px);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 9999; flex-direction: column;
+            background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;
         }
+        .prompt-box { background: var(--card-bg); border: 2px solid var(--primary-color); padding: 2rem; border-radius: 10px; text-align: center; }
+        .prompt-box input { padding: 10px; margin: 10px; border-radius: 5px; border: 1px solid var(--primary-color); background: #000; color: #fff; }
 
-        .prompt-box {
-            background-color: var(--card-bg); border: 2px solid var(--primary-color);
-            padding: 2rem; border-radius: 10px; text-align: center;
-            box-shadow: 0 10px 30px rgba(15, 76, 129, 0.5);
-        }
-        .prompt-box input {
-            padding: 10px; width: 80%; margin: 15px 0; background: var(--background-color); 
-            border: 1px solid var(--primary-color); color: white; border-radius: 5px; font-size: 16px;
-        }
-        .prompt-box button {
-            background: var(--primary-color); color: white; border: none; padding: 10px 20px; 
-            font-size: 16px; border-radius: 5px; cursor: pointer; font-weight: bold;
-        }
-
-        #gamePlayerOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--background-color); z-index: 5000;
-            display: none; flex-direction: column;
-        }
-        .player-header {
-            background-color: var(--card-bg); border-bottom: 2px solid var(--primary-color);
-            padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
-        }
-        .player-header button {
-            background: var(--primary-color); color: white; border: none; padding: 8px 15px; 
-            border-radius: 5px; cursor: pointer; font-weight: bold;
-        }
-        .player-header button:hover { background: var(--primary-hover); }
-        #gameIframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #000; }
-        
-        #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 10000; }
-        .toast {
-            background: var(--primary-color); color: white; padding: 15px 20px; border-radius: 5px;
-            margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); animation: slideIn 0.3s ease-out forwards;
-        }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-
-        /* --- HIDDEN ADMIN PANEL STYLES --- */
+        /* Admin Panel Styles */
         #inGameAdminPanel {
-            display: none; /* Completely hidden by default */
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: var(--card-bg); 
-            border: 2px solid var(--danger-color); 
-            padding: 25px;
-            border-radius: 10px; 
-            width: 350px; 
-            z-index: 10001; /* Must be higher than other overlays */
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
-            color: white; 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--card-bg); border: 2px solid var(--danger-color); padding: 20px;
+            border-radius: 10px; width: 320px; z-index: 10001; box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
         }
-        #inGameAdminPanel h2 { color: var(--danger-color); text-align: center; margin-top: 0; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
-        #inGameAdminPanel input, #inGameAdminPanel button {
-            width: 100%; margin-top: 10px; padding: 10px; box-sizing: border-box;
-            border-radius: 4px; border: 1px solid var(--card-border); background: #000; color: white;
+        #playerListDisplay { 
+            background: #000; border: 1px solid #333; height: 100px; overflow-y: auto; 
+            margin: 10px 0; padding: 5px; font-size: 12px; color: #aaa; list-style: none;
         }
-        #inGameAdminPanel button { background: var(--danger-color); cursor: pointer; font-weight: bold; border: none; }
-        #inGameAdminPanel button:hover { background: #dc2626; }
-        #closeAdmin { background: #333; margin-top: 15px; }
-        #closeAdmin:hover { background: #555; }
+        #playerListDisplay li:hover { color: #fff; background: #222; cursor: pointer; }
+        
+        .admin-btn { width: 100%; padding: 8px; margin-top: 5px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-red { background: var(--danger-color); color: white; }
+        .btn-gold { background: #eab308; color: black; }
+
+        #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 10002; }
+        .toast { background: var(--primary-color); color: white; padding: 12px; border-radius: 5px; margin-bottom: 5px; animation: slideIn 0.3s; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
 
     <div id="namePromptOverlay" class="fullscreen-overlay">
         <div class="prompt-box">
-            <h2>Welcome to American Playground</h2>
-            <p>What should we call you?</p>
-            <input type="text" id="userNameInput" placeholder="Enter your first name...">
-            <br>
-            <button onclick="saveName()">Let's Play</button>
+            <h2>American Playground</h2>
+            <input type="text" id="userNameInput" placeholder="Enter Nickname...">
+            <button onclick="saveName()" style="padding: 10px 20px; cursor: pointer;">Join</button>
         </div>
     </div>
 
     <div id="lockScreenOverlay" class="fullscreen-overlay" style="display: none;">
-        <div style="text-align: center;">
-            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            <h1 style="color: white; margin-top: 20px;">Site Locked</h1>
-            <p style="color: #888;">An administrator has temporarily locked your access.</p>
-        </div>
+        <h1>🔒 Site Locked</h1>
+        <p>Admin has paused the playground.</p>
     </div>
 
     <div id="inGameAdminPanel">
-        <h2>Command Center ⚡</h2>
+        <h3 style="color: var(--danger-color); margin: 0 0 10px 0; text-align: center;">ADMIN CONSOLE</h3>
+        <input type="password" id="adminSecretPass" placeholder="Admin Password" style="width: 100%; padding: 8px; box-sizing: border-box;">
         
-        <input type="password" id="adminSecretPass" placeholder="Enter Admin Password">
+        <p style="font-size: 10px; margin: 10px 0 0 0;">ONLINE PLAYERS (Click to target):</p>
+        <ul id="playerListDisplay"></ul>
+
+        <input type="text" id="targetUserId" placeholder="Target ID (or 'all')" style="width: 100%; padding: 5px; box-sizing: border-box; margin-bottom: 5px;">
+        <input type="text" id="adminMsgText" placeholder="Message..." style="width: 100%; padding: 5px; box-sizing: border-box;">
+        <button class="admin-btn btn-red" onclick="sendAdminCommand('message')">Send Message</button>
         
-        <label style="font-size: 12px; color: #888; margin-top: 10px; display: block;">Target User ID (Leave blank for all):</label>
-        <input type="text" id="targetUserId" placeholder="e.g. 0g39wv7wi">
+        <input type="text" id="adminUrlText" placeholder="Redirect URL..." style="width: 100%; padding: 5px; box-sizing: border-box; margin-top: 5px;">
+        <button class="admin-btn btn-red" onclick="sendAdminCommand('redirect')">Force Redirect</button>
 
-        <input type="text" id="adminMsgText" placeholder="Broadcast Message...">
-        <button onclick="sendAdminCommand('message')">Broadcast Message</button>
-
-        <input type="text" id="adminUrlText" placeholder="https://...">
-        <button onclick="sendAdminCommand('redirect')">Force Redirect</button>
-
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button onclick="sendAdminCommand('lock')" style="background: #eab308; color: black;">Lock Site</button>
-            <button onclick="sendAdminCommand('unlock')" style="background: var(--primary-color);">Unlock Site</button>
+        <div style="display: flex; gap: 5px;">
+            <button class="admin-btn btn-gold" onclick="sendAdminCommand('lock')">Lock</button>
+            <button class="admin-btn btn-gold" style="background: #0f4c81; color: white;" onclick="sendAdminCommand('unlock')">Unlock</button>
         </div>
-        
-        <button id="closeAdmin" onclick="toggleAdminPanel()">Close Panel</button>
-    </div>
-
-    <div id="gamePlayerOverlay">
-        <div class="player-header">
-            <button onclick="closeGame()">⬅ Back to Games</button>
-            <h3 id="playingTitle" style="margin: 0; color: white;">Playing...</h3>
-            <div style="width: 100px;"></div>
-        </div>
-        <iframe id="gameIframe" src=""></iframe>
+        <button onclick="toggleAdminPanel()" style="width: 100%; margin-top: 10px; background: #333; color: white; border: none; padding: 5px; cursor: pointer;">Close</button>
     </div>
 
     <div id="toastContainer"></div>
 
     <header>
         <div class="header-content">
-            <div>
-                <div class="logo">American Playground ( Rip-off )</div>
-                <div class="navbar">
-                    <a onclick="closeGame()">Home</a>
-                </div>
-            </div>
-            <div style="color: #888; font-size: 14px;">Welcome, <span id="displayUserName">Player</span></div>
+            <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color);">Playground Alpha</div>
+            <div>User: <span id="displayUserName" style="color: #fff;">...</span></div>
         </div>
     </header>
 
     <main>
-        <h4>You are testing the site so there will be bugs.</h4>
-        
-        <div id="tags-container" style="margin-bottom: 20px;"></div>
-        <div id="game-container" class="games-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;"></div>
+        <div id="game-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
+            </div>
     </main>
 
-    <script src="scripts/main.js"></script>
     <script>
-        // --- EXISTING GAME LOGIC ---
+        let ws;
         let currentUser = {
-            id: localStorage.getItem('userId') || generateId(),
+            id: localStorage.getItem('userId') || Math.random().toString(36).substr(2, 9),
             name: localStorage.getItem('userName')
         };
-
-        function generateId() {
-            const id = Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('userId', id);
-            return id;
-        }
-
-        function checkName() {
-            if (currentUser.name) {
-                document.getElementById('namePromptOverlay').style.display = 'none';
-                document.getElementById('displayUserName').textContent = currentUser.name;
-                initApp(); 
-            }
-        }
+        localStorage.setItem('userId', currentUser.id);
 
         function saveName() {
-            const input = document.getElementById('userNameInput').value.trim();
-            if (input.length > 0) {
-                localStorage.setItem('userName', input);
-                currentUser.name = input;
+            const val = document.getElementById('userNameInput').value.trim();
+            if (val) {
+                currentUser.name = val;
+                localStorage.setItem('userName', val);
                 document.getElementById('namePromptOverlay').style.display = 'none';
-                document.getElementById('displayUserName').textContent = currentUser.name;
-                initApp();
+                document.getElementById('displayUserName').textContent = val;
+                connect();
             }
         }
 
-        function initApp() {
-            connectWebSocket();
-            loadGamesFromGitHub(); 
-        }
-
-        let allGames = [];
-
-        async function loadGamesFromGitHub() {
-            try {
-                const githubUsername = "APGCxnnxr"; 
-                const repositoryName = "APGCxnnxr.github.io";
-                const folderName = "games"; 
-
-                const apiUrl = `https://api.github.com/repos/${githubUsername}/${repositoryName}/contents/${folderName}`;
+        function connect() {
+            ws = new WebSocket('wss://amplr.onrender.com');
+            ws.onopen = () => ws.send(JSON.stringify({ type: 'join', user: currentUser }));
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
                 
-                const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error("Could not fetch folder contents from GitHub.");
-                
-                const files = await response.json();
-                const htmlFiles = files.filter(file => file.name.endsWith('.html'));
+                if (data.type === 'userListUpdate') {
+                    updateListUI(data.users);
+                } else if (data.type === 'serverAction') {
+                    handleAction(data);
+                }
+            };
+            ws.onclose = () => setTimeout(connect, 3000);
+        }
 
-                allGames = htmlFiles.map(file => {
-                    let rawName = file.name.replace('.html', '');
-                    let cleanTitle = rawName.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-                    return {
-                        title: cleanTitle,
-                        link: file.path
-                    };
-                });
-
-                renderGames();
-
-            } catch (error) {
-                console.error("Failed to load games from GitHub:", error);
-                document.getElementById('game-container').innerHTML = "<p style='color:red;'>Failed to read games folder from GitHub. Make sure you have a folder named 'games' with your HTML files inside!</p>";
+        function updateListUI(users) {
+            const list = document.getElementById('playerListDisplay');
+            list.innerHTML = '';
+            for (let id in users) {
+                const li = document.createElement('li');
+                li.textContent = `${users[id]} (${id})`;
+                li.onclick = () => document.getElementById('targetUserId').value = id;
+                list.appendChild(li);
             }
         }
 
-        function renderGames() {
-            const container = document.getElementById("game-container");
-            container.innerHTML = "";
-            
-            allGames.forEach(game => {
-                const gameBox = document.createElement("div");
-                gameBox.className = "game-box";
-                gameBox.onclick = () => openGame(game.link, game.title);
-                gameBox.innerHTML = `<span>${game.title}</span>`;
-                container.appendChild(gameBox);
-            });
-        }
-
-        function openGame(link, title) {
-            document.getElementById('playingTitle').textContent = "Playing: " + title;
-            document.getElementById('gameIframe').src = link;
-            document.getElementById('gamePlayerOverlay').style.display = 'flex';
-        }
-
-        function closeGame() {
-            document.getElementById('gameIframe').src = ""; 
-            document.getElementById('gamePlayerOverlay').style.display = 'none';
-        }
-
-        let ws;
-        function connectWebSocket() {
-            const wsUrl = 'wss://amplr.onrender.com'; 
-            try {
-                ws = new WebSocket(wsUrl);
-                ws.onopen = () => {
-                    console.log('Connected to Server');
-                    ws.send(JSON.stringify({ type: 'join', user: currentUser }));
-                };
-                ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    handleServerCommand(data);
-                };
-                ws.onclose = () => {
-                    setTimeout(connectWebSocket, 5000);
-                };
-            } catch (e) {
-                console.warn("WebSocket failed to connect.");
-            }
-        }
-
-        function handleServerCommand(data) {
-            if (data.targetId && data.targetId !== 'all' && data.targetId !== currentUser.id) return;
-
+        function handleAction(data) {
             switch (data.action) {
+                case 'message': showToast(data.payload); break;
                 case 'lock': document.getElementById('lockScreenOverlay').style.display = 'flex'; break;
                 case 'unlock': document.getElementById('lockScreenOverlay').style.display = 'none'; break;
-                case 'message': showToast(data.payload); break;
                 case 'redirect': window.location.href = data.payload; break;
             }
         }
 
         function showToast(msg) {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = msg;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
+            const div = document.createElement('div');
+            div.className = 'toast';
+            div.textContent = msg;
+            document.getElementById('toastContainer').appendChild(div);
+            setTimeout(() => div.remove(), 5000);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            checkName();
-        });
-
-        // --- NEW ADMIN LOGIC ---
-        
-        // Listen for Ctrl + Shift + A to toggle the menu
-        document.addEventListener('keydown', function(event) {
-            if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'a') {
-                toggleAdminPanel();
-            }
+        // Admin Toggle
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') toggleAdminPanel();
         });
 
         function toggleAdminPanel() {
-            const panel = document.getElementById('inGameAdminPanel');
-            if (panel.style.display === 'none' || panel.style.display === '') {
-                panel.style.display = 'block';
-                document.getElementById('adminSecretPass').focus();
-            } else {
-                panel.style.display = 'none';
-            }
+            const p = document.getElementById('inGameAdminPanel');
+            p.style.display = (p.style.display === 'block') ? 'none' : 'block';
         }
 
         function sendAdminCommand(action) {
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                return alert("Cannot send command: Game is not connected to the server!");
-            }
+            const pass = document.getElementById('adminSecretPass').value;
+            const target = document.getElementById('targetUserId').value || 'all';
+            let payload = (action === 'message') ? document.getElementById('adminMsgText').value : document.getElementById('adminUrlText').value;
 
-            const password = document.getElementById('adminSecretPass').value;
-            if (!password) {
-                return alert("Access Denied: You must enter the admin password.");
-            }
-
-            let payload = "";
-            if (action === 'message') payload = document.getElementById('adminMsgText').value;
-            if (action === 'redirect') payload = document.getElementById('adminUrlText').value;
-
-            const targetId = document.getElementById('targetUserId').value || "all";
-
-            const commandData = {
-                type: 'adminCommand', // Must match your server's expected type
+            ws.send(JSON.stringify({
+                type: 'adminCommand',
+                password: pass,
                 action: action,
-                targetId: targetId,
-                payload: payload,
-                password: password 
-            };
+                targetId: target,
+                payload: payload
+            }));
+        }
 
-            ws.send(JSON.stringify(commandData));
-            console.log("Admin command sent:", commandData);
-            
-            // Clear inputs
-            document.getElementById('adminMsgText').value = '';
-            document.getElementById('adminUrlText').value = '';
+        if (currentUser.name) {
+            document.getElementById('namePromptOverlay').style.display = 'none';
+            document.getElementById('displayUserName').textContent = currentUser.name;
+            connect();
         }
     </script>
 </body>
