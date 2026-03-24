@@ -185,84 +185,81 @@
         localStorage.setItem('ap_id', user.id);
         document.getElementById('idTag').textContent = user.id;
 
-        // --- THE DUAL-ARCHIVE FETCHER ---
-        async function loadGames() {
-            const container = document.getElementById('game-container');
-            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--primary);">Syncing with Master Archives...</p>';
+   // --- THE TARGETED ARCHIVE FETCHER ---
+async function loadGames() {
+    const container = document.getElementById('game-container');
+    container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--primary);">Scanning the Games Folders...</p>';
 
-            // We are pulling from BOTH community archives simultaneously
-            const sources = [
-                { user: "HTML5GameArchive", repo: "gfiles" },
-                { user: "BinBashBanana", repo: "gfiles" }
-            ];
+    // We added the specific 'path' so it ignores CSS, Emulators, etc.
+    const sources = [
+        { user: "HTML5GameArchive", repo: "gfiles", path: "games" },
+        { user: "BinBashBanana", repo: "gfiles", path: "games" }
+    ];
 
+    try {
+        const fetchPromises = sources.map(async (src) => {
             try {
-                // Fetch both repos at the exact same time to speed things up
-                const fetchPromises = sources.map(async (src) => {
-                    try {
-                        const res = await fetch(`https://api.github.com/repos/${src.user}/${src.repo}/contents/`);
-                        if (!res.ok) return [];
-                        const data = await res.json();
-                        return data.map(f => ({ ...f, srcUser: src.user, srcRepo: src.repo }));
-                    } catch (e) {
-                        return []; // If one fails, just return empty so it doesn't break the other
-                    }
-                });
-
-                const results = await Promise.all(fetchPromises);
+                // Notice the URL now ends with /contents/${src.path}
+                const res = await fetch(`https://api.github.com/repos/${src.user}/${src.repo}/contents/${src.path}`);
+                if (!res.ok) return [];
+                const data = await res.json();
                 
-                // Combine the results into one big list
-                let allFiles = [];
-                results.forEach(repoFiles => { allFiles = allFiles.concat(repoFiles); });
-
-                // We use a Map to prevent duplicate games from showing up
-                const uniqueGames = new Map();
-
-                allFiles.forEach(file => {
-                    if (file.type === 'dir' && !file.name.startsWith('.')) {
-                        const cleanName = file.name.replace(/-/g, ' ').replace(/_/g, ' ');
-                        const displayName = cleanName.toUpperCase();
-                        
-                        // If it's not already in the list, add it
-                        if (!uniqueGames.has(displayName)) {
-                            uniqueGames.set(displayName, file);
-                        }
-                    }
-                });
-
-                container.innerHTML = '';
-                
-                // Sort them alphabetically A-Z
-                const sortedNames = Array.from(uniqueGames.keys()).sort();
-
-                sortedNames.forEach(gameName => {
-                    const file = uniqueGames.get(gameName);
-                    
-                    const card = document.createElement('div');
-                    card.className = 'game-card';
-                    card.setAttribute('data-name', gameName.toLowerCase());
-                    
-                    // Statically.io CDN for filter bypassing
-                    const gameUrl = `https://cdn.statically.io/gh/${file.srcUser}/${file.srcRepo}/main/${file.name}/index.html`;
-
-                    card.onclick = () => {
-                        document.getElementById('nowPlaying').textContent = gameName;
-                        document.getElementById('gameIframe').src = gameUrl;
-                        document.getElementById('gameViewer').style.display = 'flex';
-                    };
-
-                    card.innerHTML = `
-                        <div style="font-size: 35px; margin-bottom: 10px; background: #111; width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #333;">🕹️</div>
-                        <span>${gameName}</span>
-                    `;
-                    container.appendChild(card);
-                });
-
-            } catch (err) {
-                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: red;">Failed to reach the archives. Check your connection or GitHub API limits.</p>';
+                // We pass the path down so the iframe knows where to look
+                return data.map(f => ({ ...f, srcUser: src.user, srcRepo: src.repo, srcPath: src.path }));
+            } catch (e) {
+                return []; 
             }
-        }
+        });
 
+        const results = await Promise.all(fetchPromises);
+        
+        let allFiles = [];
+        results.forEach(repoFiles => { allFiles = allFiles.concat(repoFiles); });
+
+        const uniqueGames = new Map();
+
+        allFiles.forEach(file => {
+            // Only pull actual folders, and ignore hidden system files
+            if (file.type === 'dir' && !file.name.startsWith('.')) {
+                const cleanName = file.name.replace(/-/g, ' ').replace(/_/g, ' ');
+                const displayName = cleanName.toUpperCase();
+                
+                if (!uniqueGames.has(displayName)) {
+                    uniqueGames.set(displayName, file);
+                }
+            }
+        });
+
+        container.innerHTML = '';
+        const sortedNames = Array.from(uniqueGames.keys()).sort();
+
+        sortedNames.forEach(gameName => {
+            const file = uniqueGames.get(gameName);
+            
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            card.setAttribute('data-name', gameName.toLowerCase());
+            
+            // The CDN link now correctly routes through the specific game folder
+            const gameUrl = `https://cdn.statically.io/gh/${file.srcUser}/${file.srcRepo}/main/${file.srcPath}/${file.name}/index.html`;
+
+            card.onclick = () => {
+                document.getElementById('nowPlaying').textContent = gameName;
+                document.getElementById('gameIframe').src = gameUrl;
+                document.getElementById('gameViewer').style.display = 'flex';
+            };
+
+            card.innerHTML = `
+                <div style="font-size: 35px; margin-bottom: 10px; background: #111; width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #333;">🕹️</div>
+                <span>${gameName}</span>
+            `;
+            container.appendChild(card);
+        });
+
+    } catch (err) {
+        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: red;">Failed to reach the archives. Check your connection or GitHub API limits.</p>';
+    }
+}
         // --- WEB SOCKETS & ADMIN CONTROLS ---
         function connectWS() {
             // Replace with your Render URL
