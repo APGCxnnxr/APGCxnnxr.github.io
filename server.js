@@ -1,98 +1,63 @@
 const WebSocket = require('ws');
 
-const port = process.env.PORT || 10000; 
-const wss = new WebSocket.Server({ port: port }, () => {
-    console.log(`WebSocket server running on port ${port}`);
-});
+// 1. SET YOUR SECRET PASSWORD HERE
+const ADMIN_PASSWORD = "supersecretpassword123"; 
 
-const ADMIN_PASSWORD = "AdminConBad";
+// Render automatically assigns a PORT environment variable, so we use that.
+const port = process.env.PORT || 8080;
+const wss = new WebSocket.Server({ port: port });
 
-const clients = new Map();
-const admins = new Set(); // NEW: Keep track of active admin panels
-
-// Helper function to push the user list to all admins
-function pushUserListToAdmins() {
-    const userList = Array.from(clients.values());
-    admins.forEach((adminWs) => {
-        if (adminWs.readyState === WebSocket.OPEN) {
-            adminWs.send(JSON.stringify({
-                action: 'userListUpdate',
-                payload: userList
-            }));
-        }
-    });
-}
+console.log(`WebSocket server started on port ${port}`);
 
 wss.on('connection', (ws) => {
     console.log('New connection detected.');
 
-    ws.on('message', (messageAsString) => {
+    ws.on('message', (message) => {
         try {
-            const data = JSON.parse(messageAsString);
+            const data = JSON.parse(message);
 
-            // 1. Regular player joins
+            // Handle a player joining
             if (data.type === 'join') {
-                clients.set(ws, data.user);
-                console.log(`${data.user.name} (${data.user.id}) joined the playground.`);
-                pushUserListToAdmins(); // Automatically update the admin dropdown!
-                return;
+                ws.userId = data.user.id; // Attach the user ID to their specific connection
+                console.log(`User joined: ${data.user.name} (${ws.userId})`);
             }
 
-            // 2. Admin logs in
-            if (data.type === 'getUsers') {
-                if (data.password !== ADMIN_PASSWORD) return; 
-                
-                admins.add(ws); // Register this connection as an admin
-                pushUserListToAdmins(); // Send them the initial list
-                return;
-            }
-
-            // 3. Admin fires a command
+            // Handle the Admin Commands
             if (data.type === 'adminCommand') {
-                if (data.password !== ADMIN_PASSWORD) return;
+                
+                // --- SECURITY CHECK ---
+                if (data.password !== ADMIN_PASSWORD) {
+                    console.log("WARNING: Failed admin login attempt! Incorrect password.");
+                    return; // Stop right here, ignore the command
+                }
 
+                console.log(`Admin command approved: [${data.action}] Targeting: [${data.targetId}]`);
+
+                // Prepare the message to send back to the clients
+                const commandToBroadcast = JSON.stringify({
+                    action: data.action,
+                    payload: data.payload,
+                    targetId: data.targetId
+                });
+
+                // Loop through every connected player and send the command
                 wss.clients.forEach((client) => {
-                    if (client.readyState === WebSocket.OPEN && !admins.has(client)) {
-                        client.send(JSON.stringify({
-                            action: data.action,
-                            targetId: data.targetId,
-                            payload: data.payload
-                        }));
+                    if (client.readyState === WebSocket.OPEN) {
+                        
+                        // Check if the command is for "all" OR if it matches this specific client's ID
+                        if (data.targetId === 'all' || client.userId === data.targetId) {
+                            client.send(commandToBroadcast);
+                        }
                     }
                 });
             }
 
         } catch (error) {
-            console.error("Error processing message:", error);
+            console.error('Error parsing incoming message:', error);
         }
     });
 
     ws.on('close', () => {
-        // If an admin leaves, remove them from the admin set
-        if (admins.has(ws)) {
-            admins.delete(ws);
-        } else {
-            // If a regular player leaves, remove them and update the admins
-            const user = clients.get(ws);
-            if (user) console.log(`${user.name} left the playground.`);
-            clients.delete(ws);
-            pushUserListToAdmins(); // Update the dropdown so ghosts are removed
-        }
+        console.log('A client disconnected.');
     });
-});
-wss.on('connection', function connection(ws, req) {
-  // 1. Log EVERY connection attempt immediately
-  console.log(`[WSS] New connection attempt from: ${req.socket.remoteAddress}`);
-
-  ws.on('message', function message(data) {
-    // 2. Log EVERY raw message before trying to parse it
-    console.log('[WSS] Raw message received:', data.toString());
-    
-    try {
-      const parsed = JSON.parse(data);
-      // Handle your admin commands here
-    } catch (err) {
-      console.error('[WSS] Failed to parse message:', err);
-    }
-  });
 });
