@@ -37,7 +37,6 @@
         
         main { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; min-height: 70vh; }
 
-        /* Modified Game Box for text-only display */
         .game-box {
             background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px;
             padding: 40px 10px; text-align: center; cursor: pointer; transition: transform 0.2s;
@@ -143,7 +142,6 @@
 
     <script src="scripts/main.js"></script>
     <script>
-        // --- User Logic ---
         let currentUser = {
             id: localStorage.getItem('userId') || generateId(),
             name: localStorage.getItem('userName')
@@ -179,7 +177,6 @@
             loadGamesFromGitHub(); 
         }
 
-        // --- GitHub API Game Loader ---
         let allGames = [];
 
         async function loadGamesFromGitHub() {
@@ -194,8 +191,6 @@
                 if (!response.ok) throw new Error("Could not fetch folder contents from GitHub.");
                 
                 const files = await response.json();
-                
-                // Only grab .html files
                 const htmlFiles = files.filter(file => file.name.endsWith('.html'));
 
                 allGames = htmlFiles.map(file => {
@@ -204,7 +199,7 @@
 
                     return {
                         title: cleanTitle,
-                        link: file.path // This will be "games/filename.html"
+                        link: file.path
                     };
                 });
 
@@ -240,7 +235,6 @@
             document.getElementById('gamePlayerOverlay').style.display = 'none';
         }
 
-        // --- WebSocket Logic ---
         let ws;
         function connectWebSocket() {
             const wsUrl = 'wss://amplr.gorender.com'; 
@@ -263,7 +257,6 @@
         }
 
         function handleServerCommand(data) {
-            // Ignore commands not meant for us
             if (data.targetId && data.targetId !== 'all' && data.targetId !== currentUser.id) return;
 
             switch (data.action) {
