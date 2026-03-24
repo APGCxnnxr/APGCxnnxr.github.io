@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>American Playground ( Rip-off )</title>
+    <title>American Playground </title>
     
     <link rel="stylesheet" href="scripts/style.css">
     
@@ -82,18 +82,6 @@
         }
         .player-header button:hover { background: var(--primary-hover); }
         #gameIframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #000; }
-
-        #adminPanel {
-            position: fixed; bottom: 20px; right: 20px; width: 300px; background-color: var(--card-bg); 
-            border: 2px solid var(--danger-color); border-radius: 10px; padding: 15px; 
-            z-index: 9000; display: none; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-        }
-        #adminPanel h3 { margin-top: 0; color: var(--danger-color); border-bottom: 1px solid var(--card-border); padding-bottom: 10px;}
-        .admin-control { margin-bottom: 15px; }
-        .admin-control select, .admin-control input { width: 100%; padding: 8px; margin-top: 5px; background: #000; color: white; border: 1px solid var(--card-border); box-sizing: border-box; }
-        .admin-btn { display: inline-block; width: 48%; padding: 8px; background: var(--card-border); color: white; border: none; cursor: pointer; margin-top: 5px; text-align: center; box-sizing: border-box;}
-        .admin-btn:hover { background: var(--primary-color); }
-        .admin-btn.danger { background: var(--danger-color); }
         
         #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 10000; }
         .toast {
@@ -132,28 +120,6 @@
         <iframe id="gameIframe" src=""></iframe>
     </div>
 
-    <div id="adminPanel">
-        <h3>Admin Console ⚡</h3>
-        <div class="admin-control">
-            <label>Select User:</label>
-            <select id="adminUserSelect">
-                <option value="all">Everyone</option>
-            </select>
-        </div>
-        <div class="admin-control" style="display: flex; justify-content: space-between;">
-            <button class="admin-btn danger" onclick="adminAction('lock')">Lock</button>
-            <button class="admin-btn" onclick="adminAction('unlock')">Unlock</button>
-        </div>
-        <div class="admin-control">
-            <input type="text" id="adminMsgInput" placeholder="Message text...">
-            <button class="admin-btn" style="width: 100%;" onclick="adminAction('message')">Send Message</button>
-        </div>
-        <div class="admin-control">
-            <input type="text" id="adminUrlInput" placeholder="https://google.com">
-            <button class="admin-btn danger" style="width: 100%;" onclick="adminAction('redirect')">Force Redirect</button>
-        </div>
-    </div>
-
     <div id="toastContainer"></div>
 
     <header>
@@ -180,8 +146,7 @@
         // --- User Logic ---
         let currentUser = {
             id: localStorage.getItem('userId') || generateId(),
-            name: localStorage.getItem('userName'),
-            isAdmin: localStorage.getItem('isAdmin') === 'true'
+            name: localStorage.getItem('userName')
         };
 
         function generateId() {
@@ -210,7 +175,6 @@
         }
 
         function initApp() {
-            checkAdmin();
             connectWebSocket();
             loadGamesFromGitHub(); 
         }
@@ -235,9 +199,7 @@
                 const htmlFiles = files.filter(file => file.name.endsWith('.html'));
 
                 allGames = htmlFiles.map(file => {
-                    // Remove .html extension
                     let rawName = file.name.replace('.html', '');
-                    // Replace dashes/underscores with spaces and capitalize words
                     let cleanTitle = rawName.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
                     return {
@@ -254,7 +216,6 @@
             }
         }
 
-        // Modified render function to display text-only boxes
         function renderGames() {
             const container = document.getElementById("game-container");
             container.innerHTML = "";
@@ -302,6 +263,7 @@
         }
 
         function handleServerCommand(data) {
+            // Ignore commands not meant for us
             if (data.targetId && data.targetId !== 'all' && data.targetId !== currentUser.id) return;
 
             switch (data.action) {
@@ -309,7 +271,6 @@
                 case 'unlock': document.getElementById('lockScreenOverlay').style.display = 'none'; break;
                 case 'message': showToast(data.payload); break;
                 case 'redirect': window.location.href = data.payload; break;
-                case 'userListUpdate': if (currentUser.isAdmin) updateUserDropdown(data.payload); break;
             }
         }
 
@@ -322,61 +283,8 @@
             setTimeout(() => toast.remove(), 5000);
         }
 
-        // --- Admin UI Logic ---
-        function checkAdmin() {
-            if (currentUser.isAdmin) document.getElementById('adminPanel').style.display = 'block';
-        }
-
-        function updateUserDropdown(users) {
-            const select = document.getElementById('adminUserSelect');
-            select.innerHTML = '<option value="all">Everyone</option>';
-            users.forEach(u => {
-                if (u.id !== currentUser.id) { 
-                    const opt = document.createElement('option');
-                    opt.value = u.id;
-                    opt.textContent = `${u.name} (${u.id})`;
-                    select.appendChild(opt);
-                }
-            });
-        }
-
-        function adminAction(actionType) {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return alert("Not connected to server!");
-            const targetId = document.getElementById('adminUserSelect').value;
-            let payload = '';
-
-            if (actionType === 'message') payload = document.getElementById('adminMsgInput').value;
-            if (actionType === 'redirect') payload = document.getElementById('adminUrlInput').value;
-
-            ws.send(JSON.stringify({ type: 'adminCommand', action: actionType, targetId: targetId, payload: payload }));
-            
-            document.getElementById('adminMsgInput').value = '';
-            document.getElementById('adminUrlInput').value = '';
-        }
-
-        // --- Secret Admin Backdoor ---
-        let logoClickCount = 0;
-        let clickTimer;
-        function setupAdminBackdoor() {
-            const logo = document.querySelector('.logo');
-            logo.addEventListener('click', () => {
-                logoClickCount++;
-                clearTimeout(clickTimer);
-                clickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
-
-                if (logoClickCount === 5) {
-                    localStorage.setItem('isAdmin', 'true');
-                    currentUser.isAdmin = true;
-                    checkAdmin(); 
-                    showToast("Admin mode unlocked! ⚡");
-                    logoClickCount = 0; 
-                }
-            });
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             checkName();
-            setupAdminBackdoor();
         });
     </script>
 </body>
