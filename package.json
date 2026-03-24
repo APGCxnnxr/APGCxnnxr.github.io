@@ -1,5 +1,5 @@
 {
-  "name": "playground-server",
+  "name": "american-playground-server",
   "version": "1.0.0",
   "description": "WebSocket server for American Playground",
   "main": "server.js",
